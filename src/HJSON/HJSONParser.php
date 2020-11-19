@@ -30,12 +30,14 @@ class HJSONParser
     {
         l("parse");
 
+        l("parse - options");
         $this->keepWsc = $options && isset($options['keepWsc']) && $options['keepWsc'];
+        l("parse - source");
         $this->text = $source;
 
-        l("before rootValue");
+        l("parse - before rootValue");
         $data = $this->rootValue();
-        l("after rootValue");
+        l("parse - after rootValue");
 
         if ($options && isset($options['assoc']) && $options['assoc']) {
             $data = json_decode(json_encode($data), true);
@@ -257,39 +259,46 @@ class HJSONParser
         if ($this->ch === '}' && !$withoutBraces) {
             l("object - before next()");
             $this->next();
-            l("return");die;
+            l("return1");die;
             return $object;  // empty object
         }
         l("object - before while()");
         while ($this->ch !== null) {
             $key = $this->keyname();
+            l("object - while - before white");
             $this->white();
+            l("object - while - before next");
             $this->next(':');
             // duplicate keys overwrite the previous value
             if ($key !== '') {
                 $object->$key = $this->value();
             }
             $wat = $this->at;
+            l("object - while - before white2");
             $this->white();
             // in Hjson the comma is optional and trailing commas are allowed
             if ($this->ch === ',') {
+                l("object - while - before next2");
                 $this->next();
                 $wat = $this->at;
+                l("object - while - before white3");
                 $this->white();
             }
             if ($kw) {
+                l("object - while - before pushWhite");
                 $this->pushWhite($key, $kw, $wat);
             }
             if ($this->ch === '}' && !$withoutBraces) {
+                l("object - while - before next3");
                 $this->next();
-                l("return");die;
+                l("return2");die;
                 return $object;
             }
             $this->white();
         }
 
         if ($withoutBraces) {
-            l("return");die;
+            l("return3");die;
             return $object;
         } else {
             l("error");die;

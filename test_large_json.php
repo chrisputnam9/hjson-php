@@ -11,7 +11,7 @@ function l($data)
     static $last = 0;
     $current = microseconds();
     if ($last == 0) $last = $current;
-    $elapsed = $current - $last;
+    $elapsed = number_format(round($current - $last, 4), 4);
 
     echo date('H:i:s') . substr((string)microtime(), 1, 8) . ' (' . $elapsed . ') ... ' . $data . "\n";
     $last = $current;
@@ -32,6 +32,9 @@ $data = json_decode($json);
 echo "DONE\n";
 
 echo "HJSON Parse...\n---------------------------------------------\n";
+l("init1");
+l("init2");
+echo "---------------------------------------------\n";
 $parser = new HJSONParser;
 $data = $parser->parse($json);
 echo "---------------------------------------------\nDONE\n";
