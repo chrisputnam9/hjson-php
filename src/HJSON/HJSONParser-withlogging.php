@@ -5,9 +5,7 @@ namespace HJSON;
 class HJSONParser
 {
 
-    //private $text;
-    private $text_array;
-    private $text_length_chars;
+    private $text;
     private $at;   // The index of the current character
     private $ch;   // The current character
     private $escapee = [];
@@ -30,17 +28,22 @@ class HJSONParser
 
     public function parse($source, $options = [])
     {
-        $this->keepWsc = $options && isset($options['keepWsc']) && $options['keepWsc'];
-        //$this->text = $source;
-        $this->text_array = preg_split("//u", $source, null, PREG_SPLIT_NO_EMPTY);
-        $this->text_length_chars = count($this->text_array);
+        l("parse");
 
+        l("parse - options");
+        $this->keepWsc = $options && isset($options['keepWsc']) && $options['keepWsc'];
+        l("parse - source");
+        $this->text = $source;
+
+        l("parse - before rootValue");
         $data = $this->rootValue();
+        l("parse - after rootValue");
 
         if ($options && isset($options['assoc']) && $options['assoc']) {
             $data = json_decode(json_encode($data), true);
         }
 
+        l("returning data");
         return $data;
     }
 
@@ -62,10 +65,12 @@ class HJSONParser
 
     private function checkExit($result)
     {
+        l("checkExit - before white");
         $this->white();
         if ($this->ch !== null) {
             $this->error("Syntax error, found trailing characters!");
         }
+        l("checkExit - return");
         return $result;
     }
 
@@ -73,22 +78,30 @@ class HJSONParser
     {
         // Braces for the root object are optional
 
+        l("rootValue - before resetAt");
         $this->resetAt();
+        l("rootValue - before white");
         $this->white();
+
+        l("rootValue - before switch");
         switch ($this->ch) {
             case '{':
+                l("rootValue - before object()");
                 return $this->checkExit($this->object());
             case '[':
+                l("rootValue - before _array()");
                 return $this->checkExit($this->_array());
         }
 
         try {
           // assume we have a root object without braces
+            l("rootValue - before object()");
             return $this->checkExit($this->object(true));
         } catch (HJSONException $e) {
             // test if we are dealing with a single JSON value instead (true/false/null/num/"")
             $this->resetAt();
             try {
+                l("rootValue - before value()");
                 return $this->checkExit($this->value());
             } catch (HJSONException $e2) {
                 throw $e;
@@ -228,49 +241,67 @@ class HJSONParser
 
         if (!$withoutBraces) {
             // assuming ch === '{'
+            l("object - before next()");
             $this->next();
+            l("object - after next()");
             $wat = $this->at;
         } else {
             $wat = 1;
         }
 
+        l("object - before white()");
         $this->white();
+        l("object - after white()");
         if ($kw) {
+            l("object - before pushWhite()");
             $this->pushWhite(" ", $kw, $wat);
         }
         if ($this->ch === '}' && !$withoutBraces) {
+            l("object - before next()");
             $this->next();
+            l("return1");die;
             return $object;  // empty object
         }
+        l("object - before while()");
         while ($this->ch !== null) {
             $key = $this->keyname();
+            l("object - while - before white");
             $this->white();
+            l("object - while - before next");
             $this->next(':');
             // duplicate keys overwrite the previous value
             if ($key !== '') {
                 $object->$key = $this->value();
             }
             $wat = $this->at;
+            l("object - while - before white2");
             $this->white();
             // in Hjson the comma is optional and trailing commas are allowed
             if ($this->ch === ',') {
+                l("object - while - before next2");
                 $this->next();
                 $wat = $this->at;
+                l("object - while - before white3");
                 $this->white();
             }
             if ($kw) {
+                l("object - while - before pushWhite");
                 $this->pushWhite($key, $kw, $wat);
             }
             if ($this->ch === '}' && !$withoutBraces) {
+                l("object - while - before next3");
                 $this->next();
+                l("return2");die;
                 return $object;
             }
             $this->white();
         }
 
         if ($withoutBraces) {
+            l("return3");die;
             return $object;
         } else {
+            l("error");die;
             $this->error("End of input while parsing an object (did you forget a closing '}'?)");
         }
     }
@@ -317,29 +348,25 @@ class HJSONParser
         $colBytes = 0;
         $line=1;
 
-        // Start with where we're at now, count back to most recent line break
-        // - to determine "column" of error hit
         $i = $this->at;
         while ($i > 0) {
-            //$ch = mb_substr(mb_strcut($this->text, $i - 1), 0, 1);
-            $ch = $this->text_array[$i];
-            $i -= 1;
+            $ch = mb_substr(mb_strcut($this->text, $i - 1), 0, 1);
+            $i -= strlen($ch);
 
             if ($ch === "\n") {
                 break;
             }
 
             $col++;
+            $colBytes += strlen($ch);
         }
 
-        // Count back line endings from there to determine line# of error hit
         for (; $i > 0; $i--) {
-            if ($this->text_array[$i] === "\n") {
+            if ($this->text[$i] === "\n") {
                 $line++;
             }
         }
-        //throw new HJSONException("$m at line $line, $col >>>". mb_substr(mb_strcut($this->text, $this->at - $colBytes), 0, 20) ." ...");
-        throw new HJSONException("$m at line $line, $col >>>". implode(array_slice($this->text_array, $this->at - $col, 20)) ." ...");
+        throw new HJSONException("$m at line $line, $col >>>". mb_substr(mb_strcut($this->text, $this->at - $colBytes), 0, 20) ." ...");
     }
 
     private function next($c = false)
@@ -352,10 +379,8 @@ class HJSONParser
 
         // Get the next character. When there are no more characters,
         // return the empty string.
-        //$this->ch = (strlen($this->text) > $this->at) ? mb_substr(mb_strcut($this->text, $this->at), 0, 1) : null;
-        $this->ch = ($this->text_length_chars > $this->at) ? $this->text_array[$i] : null;
-        //$this->at += strlen($this->ch);
-        ++$this->at;
+        $this->ch = (strlen($this->text) > $this->at) ? mb_substr(mb_strcut($this->text, $this->at), 0, 1) : null;
+        $this->at += strlen($this->ch);
         return $this->ch;
     }
 
