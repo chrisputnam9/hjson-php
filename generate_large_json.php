@@ -8,7 +8,7 @@ use HJSON\HJSONStringifier;
 
 $data = [];
 
-for ($i=1;$i<=300;$i++)
+for ($i=1;$i<=1000;$i++)
 {
     $data['key'.$i] = [
         'name' => 'name'.$i,
@@ -19,11 +19,12 @@ for ($i=1;$i<=300;$i++)
 
 $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 file_put_contents(__DIR__.'/tests/assets/large_file_test.json', $json);
+file_put_contents(__DIR__.'/tests/assets/large_file_result.json', $json);
 
 $stringifier = new HJSONStringifier;
 $hjson = $stringifier->stringify($data);
-file_put_contents(__DIR__.'/tests/assets/large_file_result.hjson', $json);
 
+file_put_contents(__DIR__.'/tests/assets/large_file_result.hjson', $hjson);
 // Generate a VERY large file
 $data = [];
 

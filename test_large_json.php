@@ -46,6 +46,7 @@ $parser = new HJSONParser;
 $data = $parser->parse($json);
 l("Done parsing");
 echo "---------------------------------------------\n";
+print_r($data);
 l("Stringifying...");
 $stringifier = new HJSONStringifier;
 $json = $stringifier->stringify($data);
