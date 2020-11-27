@@ -28,22 +28,14 @@ class HJSONParser
 
     public function parse($source, $options = [])
     {
-        l("parse");
-
-        l("parse - options");
         $this->keepWsc = $options && isset($options['keepWsc']) && $options['keepWsc'];
-        l("parse - source");
         $this->text = $source;
-
-        l("parse - before rootValue");
         $data = $this->rootValue();
-        l("parse - after rootValue");
 
         if ($options && isset($options['assoc']) && $options['assoc']) {
             $data = json_decode(json_encode($data), true);
         }
 
-        l("returning data");
         return $data;
     }
 
@@ -65,12 +57,10 @@ class HJSONParser
 
     private function checkExit($result)
     {
-        l("checkExit - before white");
         $this->white();
         if ($this->ch !== null) {
             $this->error("Syntax error, found trailing characters!");
         }
-        l("checkExit - return");
         return $result;
     }
 
@@ -78,30 +68,22 @@ class HJSONParser
     {
         // Braces for the root object are optional
 
-        l("rootValue - before resetAt");
         $this->resetAt();
-        l("rootValue - before white");
         $this->white();
-
-        l("rootValue - before switch");
         switch ($this->ch) {
             case '{':
-                l("rootValue - before object()");
                 return $this->checkExit($this->object());
             case '[':
-                l("rootValue - before _array()");
                 return $this->checkExit($this->_array());
         }
 
         try {
           // assume we have a root object without braces
-            l("rootValue - before object()");
             return $this->checkExit($this->object(true));
         } catch (HJSONException $e) {
             // test if we are dealing with a single JSON value instead (true/false/null/num/"")
             $this->resetAt();
             try {
-                l("rootValue - before value()");
                 return $this->checkExit($this->value());
             } catch (HJSONException $e2) {
                 throw $e;
@@ -241,67 +223,49 @@ class HJSONParser
 
         if (!$withoutBraces) {
             // assuming ch === '{'
-            l("object - before next()");
             $this->next();
-            l("object - after next()");
             $wat = $this->at;
         } else {
             $wat = 1;
         }
 
-        l("object - before white()");
         $this->white();
-        l("object - after white()");
         if ($kw) {
-            l("object - before pushWhite()");
             $this->pushWhite(" ", $kw, $wat);
         }
         if ($this->ch === '}' && !$withoutBraces) {
-            l("object - before next()");
             $this->next();
-            l("return1");die;
             return $object;  // empty object
         }
-        l("object - before while()");
         while ($this->ch !== null) {
             $key = $this->keyname();
-            l("object - while - before white");
             $this->white();
-            l("object - while - before next");
             $this->next(':');
             // duplicate keys overwrite the previous value
             if ($key !== '') {
                 $object->$key = $this->value();
             }
             $wat = $this->at;
-            l("object - while - before white2");
             $this->white();
             // in Hjson the comma is optional and trailing commas are allowed
             if ($this->ch === ',') {
-                l("object - while - before next2");
                 $this->next();
                 $wat = $this->at;
-                l("object - while - before white3");
                 $this->white();
             }
             if ($kw) {
-                l("object - while - before pushWhite");
                 $this->pushWhite($key, $kw, $wat);
             }
             if ($this->ch === '}' && !$withoutBraces) {
-                l("object - while - before next3");
                 $this->next();
-                l("return2");die;
                 return $object;
             }
             $this->white();
         }
 
         if ($withoutBraces) {
-            l("return3");die;
             return $object;
         } else {
-            l("error");die;
             $this->error("End of input while parsing an object (did you forget a closing '}'?)");
         }
     }
